@@ -13,7 +13,7 @@ use App\Models\Civil;
 use App\Models\Type;
 use App\Models\Rarity;
 use App\Models\Race;
-
+use Illuminate\Support\Facades\Storage;
 
 class SeleniumTestCommand extends Command
 {
@@ -81,7 +81,8 @@ class SeleniumTestCommand extends Command
                 array_push($card_info_urls, "https://dm.takaratomy.co.jp" . $element->getAttribute('data-href'));
             }
 
-            sleep(3);
+            $driver->wait(3);
+
             // 詳細ページにアクセス
             $driver->get($card_info_urls[1]);
 
@@ -104,6 +105,11 @@ class SeleniumTestCommand extends Command
             $race_texts = explode("/", $race_text);
 
             $base_image_url = 'https://dm.takaratomy.co.jp' . $driver->findElement(WebDriverBy::className('cardimg'))->findElement(WebDriverBy::tagName('img'))->getAttribute('src');
+
+            $imageData = file_get_contents($base_image_url);
+            $fileName = $cardname . ".jpg";
+            Storage::disk("local")->put('images/'.$fileName, $imageData);
+            return;
 
             // データベースへの登録
             $card = Card::create([
