@@ -41,6 +41,6 @@ class Card extends Model
 
     public function races()
     {
-        return $this->belongsToMany(Civil::class);
+        return $this->belongsToMany(Rarity::class);
     }
 }

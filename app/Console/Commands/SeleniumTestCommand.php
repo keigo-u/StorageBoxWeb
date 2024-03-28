@@ -39,7 +39,7 @@ class SeleniumTestCommand extends Command
     {
         // 5ページ分のURLを生成
         $urls = [];
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 1; $i++) {
             array_push($urls, "https://dm.takaratomy.co.jp/card/?v=%7B%22suggest%22:%22on%22,%22keyword_type%22:%5B%22card_name%22,%22card_ruby%22,%22card_text%22%5D,%22culture_cond%22:%5B%22%E5%8D%98%E8%89%B2%22,%22%E5%A4%9A%E8%89%B2%22%5D,%22pagenum%22:%22".$i."%22,%22samename%22:%22show%22,%22sort%22:%22release_new%22%7D");
         }
 
@@ -67,88 +67,93 @@ class SeleniumTestCommand extends Command
                 return RemoteWebDriver::create($host, $caps, 60000, 60000);
             }, 1000);
 
-            // サイトにアクセス
-            $driver->get($urls[0]);
+            foreach($urls as $url) {
+                // サイトにアクセス
+                $driver->get($url);
 
-            // ページタイトルが読み込まれるまで待つ
-            $driver->wait()->until(
-                WebDriverExpectedCondition::titleIs('カード検索 | デュエル・マスターズ')
-            );
+                // ページタイトルが読み込まれるまで待つ
+                $driver->wait(3)->until(
+                    WebDriverExpectedCondition::titleIs('カード検索 | デュエル・マスターズ')
+                );
 
-            // カード画像から詳細ページURLを取得
-            $card_elements = $driver->findElements(WebDriverBy::className('cardImage'));
-            $card_info_urls = [];
-            foreach ($card_elements as $element) {
-                array_push($card_info_urls, "https://dm.takaratomy.co.jp" . $element->getAttribute('data-href'));
-            }
+                // カード画像から詳細ページURLを取得
+                $card_elements = $driver->findElements(WebDriverBy::className('cardImage'));
+                $card_info_urls = [];
+                foreach ($card_elements as $element) {
+                    array_push($card_info_urls, "https://dm.takaratomy.co.jp" . $element->getAttribute('data-href'));
+                }
+                
+                foreach($card_info_urls as $card_info_url) {
+                    // 詳細ページにアクセス
+                    $driver->get($card_info_url);
+                    $driver->wait(3);
 
-            $driver->wait(3);
+                    $table_element = $driver->findElement(WebDriverBy::tagName('table'));
+                    $elems_head = $table_element->findElement(WebDriverBy::className('cardname'))->getText();
+                    $pos = mb_strripos($elems_head, "(");
+                    $cardname = mb_substr($elems_head, 0, $pos);
+                    $packname = $table_element->findElement(WebDriverBy::className('packname'))->getText();
+                    $type = $table_element->findElement(WebDriverBy::className('typetxt'))->getText();
+                    $rarity = $table_element->findElement(WebDriverBy::className('raretxt'))->getText();
+                    $power = $table_element->findElement(WebDriverBy::className('powertxt'))->getText();
+                    $cost = $table_element->findElement(WebDriverBy::className('costtxt'))->getText();
+                    $mana = $table_element->findElement(WebDriverBy::className('manatxt'))->getText();
+                    $illustrator = $table_element->findElement(WebDriverBy::className('illusttxt'))->getText();
+                    $ability = $table_element->findElement(WebDriverBy::className('abilitytxt'))->getText();
+                    $flavor = $table_element->findElement(WebDriverBy::className('flavortxt'))->getText();
+                    $civil_text = $table_element->findElement(WebDriverBy::className('civtxt'))->getText();
+                    $civil_texts = explode("/", $civil_text);
+                    $race_text = $table_element->findElement(WebDriverBy::className('racetxt'))->getText();
+                    $race_texts = explode("/", $race_text);
 
-            // 詳細ページにアクセス
-            $driver->get($card_info_urls[1]);
-
-            $table_element = $driver->findElement(WebDriverBy::tagName('table'));
-            $elems_head = $table_element->findElement(WebDriverBy::className('cardname'))->getText();
-            $pos = mb_strripos($elems_head, "(");
-            $cardname = mb_substr($elems_head, 0, $pos);
-            $packname = $table_element->findElement(WebDriverBy::className('packname'))->getText();
-            $type = $table_element->findElement(WebDriverBy::className('typetxt'))->getText();
-            $rarity = $table_element->findElement(WebDriverBy::className('raretxt'))->getText();
-            $power = $table_element->findElement(WebDriverBy::className('powertxt'))->getText();
-            $cost = $table_element->findElement(WebDriverBy::className('costtxt'))->getText();
-            $mana = $table_element->findElement(WebDriverBy::className('manatxt'))->getText();
-            $illustrator = $table_element->findElement(WebDriverBy::className('illusttxt'))->getText();
-            $ability = $table_element->findElement(WebDriverBy::className('abilitytxt'))->getText();
-            $flavor = $table_element->findElement(WebDriverBy::className('flavortxt'))->getText();
-            $civil_text = $table_element->findElement(WebDriverBy::className('civtxt'))->getText();
-            $civil_texts = explode("/", $civil_text);
-            $race_text = $table_element->findElement(WebDriverBy::className('racetxt'))->getText();
-            $race_texts = explode("/", $race_text);
-
-            $base_image_url = 'https://dm.takaratomy.co.jp' . $driver->findElement(WebDriverBy::className('cardimg'))->findElement(WebDriverBy::tagName('img'))->getAttribute('src');
+                    $base_image_url = 'https://dm.takaratomy.co.jp' . $driver->findElement(WebDriverBy::className('cardimg'))->findElement(WebDriverBy::tagName('img'))->getAttribute('src');
 
 
-            // 画像のダウンロード
-            $imageData = file_get_contents($base_image_url);
-            $fileName = $cardname . ".jpg";
-            Storage::disk("local")->put('images/'.$fileName, $imageData);
+                    // 画像のダウンロード
+                    $imageData = file_get_contents($base_image_url);
+                    $fileName = $cardname.$packname.".jpg";
+                    Storage::disk("local")->put('images/'.$fileName, $imageData);
 
-            // Cloudinaryへのアップロード
-            $imaeg_url = Cloudinary::upload($base_image_url)->getSecurePath();
+                    // Cloudinaryへのアップロード
+                    // $imaeg_url = Cloudinary::upload($base_image_url)->getSecurePath();
+                    $imaeg_url = "";
 
-            // データベースへの登録
-            $card = Card::create([
-                "card_name" => $cardname,
-                "pack_name" => $packname,
-                "base_image_url" => $base_image_url,
-                "image_url" => $imaeg_url,
-                "power" => $power,
-                "cost" => $cost,
-                "mana" => $mana,
-                "illust" => $illustrator,
-                "ability" => $ability,
-                "flavor" => $flavor,
-                "type_id" => Type::getId($type),
-                "rarity_id" => Rarity::getId($rarity)
-            ]);
+                    // データベースへの登録
+                    $card = Card::create([
+                        "card_name" => $cardname,
+                        "pack_name" => $packname,
+                        "base_image_url" => $base_image_url,
+                        "image_url" => $imaeg_url,
+                        "power" => $power,
+                        "cost" => $cost,
+                        "mana" => $mana,
+                        "illust" => $illustrator,
+                        "ability" => $ability,
+                        "flavor" => $flavor,
+                        "type_id" => Type::getId($type),
+                        "rarity_id" => Rarity::getId($rarity)
+                    ]);
 
-            $civils = [];
-            foreach($civil_texts as $civil_name) {
-                array_push($civils, Civil::getId($civil_name));
-            }
-            $card->civils()->attach($civils);
+                    $civils = [];
+                    foreach($civil_texts as $civil_name) {
+                        array_push($civils, Civil::getId($civil_name));
+                    }
+                    dump("civils", $civils);
+                    $card->civils()->attach($civils);
 
-            $races = [];
-            foreach($race_texts as $race_name) {
-                $race = Race::where("name", $race_name)->first();
-                if (isset($race)) {
-                    array_push($races, $race->id);
-                } else {
-                    $new_race = Race::create(["name" => $race_name]);
-                    array_push($races, $new_race->id);
+                    $races = [];
+                    foreach($race_texts as $race_name) {
+                        $race = Race::where("name", $race_name)->first();
+                        if (isset($race)) {
+                            array_push($races, $race->id);
+                        } else {
+                            $new_race = Race::create(["name" => $race_name]);
+                            array_push($races, $new_race->id);
+                        }
+                    }
+                    $card->races()->attach($races);
                 }
             }
-            $card->races()->attach($races);
 
             // 処理終了
             return;
