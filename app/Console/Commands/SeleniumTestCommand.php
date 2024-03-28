@@ -36,10 +36,10 @@ class SeleniumTestCommand extends Command
      */
     public function handle()
     {
-
+        // 5ページ分のURLを生成
         $urls = [];
         for ($i = 1; $i <= 5; $i++) {
-            array_push($urls, "https://dm.takaratomy.co.jp/card/?v=%7B%22suggest%22:%22on%22,%22keyword_type%22:%5B%22card_name%22,%22card_ruby%22,%22card_text%22%5D,%22culture_cond%22:%5B%22%E5%8D%98%E8%89%B2%22,%22%E5%A4%9A%E8%89%B2%22%5D,%22pagenum%22:%22" . $i . "%22,%22samename%22:%22show%22,%22sort%22:%22release_new%22%7D");
+            array_push($urls, "https://dm.takaratomy.co.jp/card/?v=%7B%22suggest%22:%22on%22,%22keyword_type%22:%5B%22card_name%22,%22card_ruby%22,%22card_text%22%5D,%22culture_cond%22:%5B%22%E5%8D%98%E8%89%B2%22,%22%E5%A4%9A%E8%89%B2%22%5D,%22pagenum%22:%22".$i."%22,%22samename%22:%22show%22,%22sort%22:%22release_new%22%7D");
         }
 
         // クロームの機能を管理するクラスのインスタンス化
@@ -56,39 +56,34 @@ class SeleniumTestCommand extends Command
         // ブラウザを実行するプラットフォームを指定。クロームとのセッションがスムーズになる？？
         $caps->setPlatform("LINUX");
 
-        // これはSelenium Serverの置いてあるURLなのかな
+        // Selenium ServerのURL
         $host = 'http://selenium:4444/wd/hub';
 
         try {
-            // なんかよく起動できずに落ちたので、retry()でくくる
+            // ドライバーの生成
             $driver = retry(3, function () use ($host, $caps) {
                 // chrome ドライバーの起動、ウイーーーーーーーーーーーン
                 return RemoteWebDriver::create($host, $caps, 60000, 60000);
             }, 1000);
 
-
-            // Y◯hoo!さんのニュースサイトに潜入します
+            // サイトにアクセス
             $driver->get($urls[0]);
 
-            // dump($driver->getCurrentUrl());
-
-            // ページタイトル「Yahoo!ニュース」が現れるまで待ちます
+            // ページタイトルが読み込まれるまで待つ
             $driver->wait()->until(
                 WebDriverExpectedCondition::titleIs('カード検索 | デュエル・マスターズ')
             );
 
+            // カード画像から詳細ページURLを取得
             $card_elements = $driver->findElements(WebDriverBy::className('cardImage'));
             $card_info_urls = [];
             foreach ($card_elements as $element) {
                 array_push($card_info_urls, "https://dm.takaratomy.co.jp" . $element->getAttribute('data-href'));
             }
 
-            // dump($card_info_urls);
-
             sleep(3);
+            // 詳細ページにアクセス
             $driver->get($card_info_urls[1]);
-
-            // dump($driver->getCurrentUrl());
 
             $table_element = $driver->findElement(WebDriverBy::tagName('table'));
             $elems_head = $table_element->findElement(WebDriverBy::className('cardname'))->getText();
@@ -109,8 +104,6 @@ class SeleniumTestCommand extends Command
             $race_texts = explode("/", $race_text);
 
             $base_image_url = 'https://dm.takaratomy.co.jp' . $driver->findElement(WebDriverBy::className('cardimg'))->findElement(WebDriverBy::tagName('img'))->getAttribute('src');
-
-            // dump($cardname, $packname, $type, $civil_texts, $rarity, $power, $cost, $mana, $illustrator, $ability, $flavor, $race_texts);
 
             // データベースへの登録
             $card = Card::create([
@@ -145,9 +138,6 @@ class SeleniumTestCommand extends Command
                 }
             }
             $card->races()->attach($races);
-
-            // dump($card);
-            
 
             // 処理終了
             return;
