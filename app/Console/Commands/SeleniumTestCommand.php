@@ -13,6 +13,7 @@ use App\Models\Civil;
 use App\Models\Type;
 use App\Models\Rarity;
 use App\Models\Race;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Storage;
 
 class SeleniumTestCommand extends Command
@@ -106,17 +107,21 @@ class SeleniumTestCommand extends Command
 
             $base_image_url = 'https://dm.takaratomy.co.jp' . $driver->findElement(WebDriverBy::className('cardimg'))->findElement(WebDriverBy::tagName('img'))->getAttribute('src');
 
+
+            // 画像のダウンロード
             $imageData = file_get_contents($base_image_url);
             $fileName = $cardname . ".jpg";
             Storage::disk("local")->put('images/'.$fileName, $imageData);
-            return;
+
+            // Cloudinaryへのアップロード
+            $imaeg_url = Cloudinary::upload($base_image_url)->getSecurePath();
 
             // データベースへの登録
             $card = Card::create([
                 "card_name" => $cardname,
                 "pack_name" => $packname,
                 "base_image_url" => $base_image_url,
-                "image_url" => "",
+                "image_url" => $imaeg_url,
                 "power" => $power,
                 "cost" => $cost,
                 "mana" => $mana,
