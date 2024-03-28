@@ -7,8 +7,12 @@ use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\Chrome\ChromeOptions;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Facebook\WebDriver\Remote\DesiredCapabilities;
-use Facebook\WebDriver\WebDriver;
 use Facebook\WebDriver\WebDriverExpectedCondition;
+use App\Models\Card;
+use App\Models\Civil;
+use App\Models\Type;
+use App\Models\Rarity;
+use App\Models\Race;
 
 
 class SeleniumTestCommand extends Command
@@ -92,7 +96,7 @@ class SeleniumTestCommand extends Command
             $cardname = mb_substr($elems_head, 0, $pos);
             $packname = $table_element->findElement(WebDriverBy::className('packname'))->getText();
             $type = $table_element->findElement(WebDriverBy::className('typetxt'))->getText();
-            $rarelity = $table_element->findElement(WebDriverBy::className('raretxt'))->getText();
+            $rarity = $table_element->findElement(WebDriverBy::className('raretxt'))->getText();
             $power = $table_element->findElement(WebDriverBy::className('powertxt'))->getText();
             $cost = $table_element->findElement(WebDriverBy::className('costtxt'))->getText();
             $mana = $table_element->findElement(WebDriverBy::className('manatxt'))->getText();
@@ -100,11 +104,50 @@ class SeleniumTestCommand extends Command
             $ability = $table_element->findElement(WebDriverBy::className('abilitytxt'))->getText();
             $flavor = $table_element->findElement(WebDriverBy::className('flavortxt'))->getText();
             $civil_text = $table_element->findElement(WebDriverBy::className('civtxt'))->getText();
-            $civils = explode("/", $civil_text);
+            $civil_texts = explode("/", $civil_text);
             $race_text = $table_element->findElement(WebDriverBy::className('racetxt'))->getText();
-            $races = explode("/", $race_text);
+            $race_texts = explode("/", $race_text);
 
-            dump($cardname, $packname, $type, $civils, $rarelity, $power, $cost, $mana, $illustrator, $ability, $flavor, $races);
+            $base_image_url = 'https://dm.takaratomy.co.jp' . $driver->findElement(WebDriverBy::className('cardimg'))->findElement(WebDriverBy::tagName('img'))->getAttribute('src');
+
+            // dump($cardname, $packname, $type, $civil_texts, $rarity, $power, $cost, $mana, $illustrator, $ability, $flavor, $race_texts);
+
+            // データベースへの登録
+            $card = Card::create([
+                "card_name" => $cardname,
+                "pack_name" => $packname,
+                "base_image_url" => $base_image_url,
+                "image_url" => "",
+                "power" => $power,
+                "cost" => $cost,
+                "mana" => $mana,
+                "illust" => $illustrator,
+                "ability" => $ability,
+                "flavor" => $flavor,
+                "type_id" => Type::getId($type),
+                "rarity_id" => Rarity::getId($rarity)
+            ]);
+
+            $civils = [];
+            foreach($civil_texts as $civil_name) {
+                array_push($civils, Civil::getId($civil_name));
+            }
+            $card->civils()->attach($civils);
+
+            $races = [];
+            foreach($race_texts as $race_name) {
+                $race = Race::where("name", $race_name)->first();
+                if (isset($race)) {
+                    array_push($races, $race->id);
+                } else {
+                    $new_race = Race::create(["name" => $race_name]);
+                    array_push($races, $new_race->id);
+                }
+            }
+            $card->races()->attach($races);
+
+            // dump($card);
+            
 
             // 処理終了
             return;
