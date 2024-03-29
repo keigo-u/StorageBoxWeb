@@ -16,6 +16,8 @@ use App\Models\Race;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Storage;
 
+use function PHPUnit\Framework\isEmpty;
+
 class SeleniumTestCommand extends Command
 {
     /**
@@ -23,25 +25,34 @@ class SeleniumTestCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'scrape:test';
+    protected $signature = 'scrape:dm {len=1} {page=1}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'test for scraping';
+    protected $description = 'Scraping duel masters cards infomation';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
+        $length = $this->argument('len');
+        $page = $this->argument('page');
+
+        if ($length < 1 || $page < 1) {
+            throw new \Exception("引数が正しくありません。");
+        }
+
         // 5ページ分のURLを生成
         $urls = [];
-        for ($i = 1; $i <= 1; $i++) {
-            array_push($urls, "https://dm.takaratomy.co.jp/card/?v=%7B%22suggest%22:%22on%22,%22keyword_type%22:%5B%22card_name%22,%22card_ruby%22,%22card_text%22%5D,%22culture_cond%22:%5B%22%E5%8D%98%E8%89%B2%22,%22%E5%A4%9A%E8%89%B2%22%5D,%22pagenum%22:%22".$i."%22,%22samename%22:%22show%22,%22sort%22:%22release_new%22%7D");
+        for ($i = $page; $i <= $length; $i++) {
+            array_push($urls, "https://dm.takaratomy.co.jp/card/?v=%7B%22suggest%22:%22on%22,%22keyword_type%22:%5B%22card_name%22,%22card_ruby%22,%22card_text%22%5D,%22culture_cond%22:%5B%22%E5%8D%98%E8%89%B2%22,%22%E5%A4%9A%E8%89%B2%22%5D,%22pagenum%22:%22" . $i . "%22,%22samename%22:%22show%22,%22sort%22:%22release_new%22%7D");
         }
+
+        dump($urls);
 
         // クロームの機能を管理するクラスのインスタンス化
         $options = new ChromeOptions();
@@ -67,9 +78,10 @@ class SeleniumTestCommand extends Command
                 return RemoteWebDriver::create($host, $caps, 60000, 60000);
             }, 1000);
 
-            foreach($urls as $url) {
+            foreach ($urls as $i => $url) {
                 // サイトにアクセス
                 $driver->get($url);
+                dump("現在アクセスしているURL(" . $i + 1 . "個目)： " . $url);
 
                 // ページタイトルが読み込まれるまで待つ
                 $driver->wait(3)->until(
@@ -82,11 +94,12 @@ class SeleniumTestCommand extends Command
                 foreach ($card_elements as $element) {
                     array_push($card_info_urls, "https://dm.takaratomy.co.jp" . $element->getAttribute('data-href'));
                 }
-                
-                foreach($card_info_urls as $card_info_url) {
+
+                foreach ($card_info_urls as $card_info_url) {
                     // 詳細ページにアクセス
                     $driver->get($card_info_url);
                     $driver->wait(3);
+                    dump("現在アクセスしている詳細ページ: " . $card_info_url);
 
                     $table_element = $driver->findElement(WebDriverBy::tagName('table'));
                     $elems_head = $table_element->findElement(WebDriverBy::className('cardname'))->getText();
@@ -111,8 +124,11 @@ class SeleniumTestCommand extends Command
 
                     // 画像のダウンロード
                     $imageData = file_get_contents($base_image_url);
-                    $fileName = $cardname.$packname.".jpg";
-                    Storage::disk("local")->put('images/'.$fileName, $imageData);
+                    $packname_start = mb_strripos($packname, "(") + 1;
+                    $packneme_end = mb_strripos($packname, " ") - 1;
+                    $pack = mb_substr($packname, $packname_start, $packneme_end - $packname_start);
+                    $fileName = $pack . "/" . $cardname . str_replace("/", "-", $packname) . ".jpg";
+                    Storage::disk("local")->put('images/' . $fileName, $imageData);
 
                     // Cloudinaryへのアップロード
                     // $imaeg_url = Cloudinary::upload($base_image_url)->getSecurePath();
@@ -135,23 +151,24 @@ class SeleniumTestCommand extends Command
                     ]);
 
                     $civils = [];
-                    foreach($civil_texts as $civil_name) {
+                    foreach ($civil_texts as $civil_name) {
                         array_push($civils, Civil::getId($civil_name));
                     }
-                    dump("civils", $civils);
                     $card->civils()->attach($civils);
 
                     $races = [];
-                    foreach($race_texts as $race_name) {
-                        $race = Race::where("name", $race_name)->first();
-                        if (isset($race)) {
-                            array_push($races, $race->id);
-                        } else {
-                            $new_race = Race::create(["name" => $race_name]);
-                            array_push($races, $new_race->id);
+                    if (!isEmpty($race_texts)) {
+                        foreach ($race_texts as $race_name) {
+                            $race = Race::where("name", $race_name)->first();
+                            if (isset($race)) {
+                                array_push($races, $race->id);
+                            } else {
+                                $new_race = Race::create(["name" => $race_name]);
+                                array_push($races, $new_race->id);
+                            }
                         }
+                        $card->races()->attach($races);
                     }
-                    $card->races()->attach($races);
                 }
             }
 

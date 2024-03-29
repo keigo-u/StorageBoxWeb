@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string("pack_name")->comment("パック名");
             $table->string("base_image_url")->comment("元画像URL");
             $table->string("image_url")->comment("画像URL");
-            $table->integer("power")->comment("パワー");
-            $table->integer("cost")->comment("コスト");
+            $table->string("power")->comment("パワー");
+            $table->string("cost")->comment("コスト");
             $table->integer("mana")->comment("マナ");
             $table->string("illust")->comment("イラストレーター");
             $table->string("ability")->comment("特殊能力");
