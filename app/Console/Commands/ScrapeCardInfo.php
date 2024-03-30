@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
 
 use function PHPUnit\Framework\isEmpty;
 
-class SeleniumTestCommand extends Command
+class ScrapeCardInfo extends Command
 {
     /**
      * The name and signature of the console command.
@@ -32,7 +32,7 @@ class SeleniumTestCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Scraping duel masters cards infomation';
+    protected $description = 'Scraping DuelMasters cards infomation';
 
     /**
      * Execute the console command.
@@ -74,7 +74,7 @@ class SeleniumTestCommand extends Command
         try {
             // ドライバーの生成
             $driver = retry(3, function () use ($host, $caps) {
-                // chrome ドライバーの起動、ウイーーーーーーーーーーーン
+                // chrome ドライバーの起動
                 return RemoteWebDriver::create($host, $caps, 60000, 60000);
             }, 1000);
 
