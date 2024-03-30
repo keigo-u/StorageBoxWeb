@@ -39,10 +39,8 @@ class Type extends Model
                 return 11;
             case "タマシード":
                 return 12;
-            case "その他":
-                return 13;
             default:
-                return 0;
+                return 13;
         }
     }
 
