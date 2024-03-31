@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
 
 use function PHPUnit\Framework\isEmpty;
 
-class SeleniumTestCommand extends Command
+class ScrapeCardInfo extends Command
 {
     /**
      * The name and signature of the console command.
@@ -32,7 +32,7 @@ class SeleniumTestCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Scraping duel masters cards infomation';
+    protected $description = 'Scraping DuelMasters cards infomation';
 
     /**
      * Execute the console command.
@@ -51,8 +51,6 @@ class SeleniumTestCommand extends Command
         for ($i = $page; $i <= $length; $i++) {
             array_push($urls, "https://dm.takaratomy.co.jp/card/?v=%7B%22suggest%22:%22on%22,%22keyword_type%22:%5B%22card_name%22,%22card_ruby%22,%22card_text%22%5D,%22culture_cond%22:%5B%22%E5%8D%98%E8%89%B2%22,%22%E5%A4%9A%E8%89%B2%22%5D,%22pagenum%22:%22" . $i . "%22,%22samename%22:%22show%22,%22sort%22:%22release_new%22%7D");
         }
-
-        dump($urls);
 
         // クロームの機能を管理するクラスのインスタンス化
         $options = new ChromeOptions();
@@ -74,14 +72,14 @@ class SeleniumTestCommand extends Command
         try {
             // ドライバーの生成
             $driver = retry(3, function () use ($host, $caps) {
-                // chrome ドライバーの起動、ウイーーーーーーーーーーーン
+                // chrome ドライバーの起動
                 return RemoteWebDriver::create($host, $caps, 60000, 60000);
             }, 1000);
 
             foreach ($urls as $i => $url) {
                 // サイトにアクセス
                 $driver->get($url);
-                dump("現在アクセスしているURL(" . $i + 1 . "個目)： " . $url);
+                echo "現在アクセスしているURL(" . $i + 1 . "個目)： " . $url;
 
                 // ページタイトルが読み込まれるまで待つ
                 $driver->wait(3)->until(
@@ -99,7 +97,7 @@ class SeleniumTestCommand extends Command
                     // 詳細ページにアクセス
                     $driver->get($card_info_url);
                     $driver->wait(3);
-                    dump("現在アクセスしている詳細ページ: " . $card_info_url);
+                    echo "現在アクセスしている詳細ページ: " . $card_info_url;
 
                     $table_element = $driver->findElement(WebDriverBy::tagName('table'));
                     $elems_head = $table_element->findElement(WebDriverBy::className('cardname'))->getText();
