@@ -14,7 +14,7 @@ use function PHPSTORM_META\type;
 class ScrapeController extends Controller
 {
     public function index() : View {
-        $cards = Card::with(["type", "rarity", "civils", "races"])->get();
+        $cards = Card::with(["type", "rarity", "civils", "races"])->paginate(10);
         $latest_page = Page::orderBy('created_at', "DESC")->first();
 
         return view("dashboard")->with(["cards" => $cards, "latest_page" => $latest_page]);
