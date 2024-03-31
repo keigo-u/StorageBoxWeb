@@ -8,7 +8,6 @@ use Facebook\WebDriver\Chrome\ChromeOptions;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Facebook\WebDriver\Remote\DesiredCapabilities;
 use App\Models\Page;
-use Illuminate\Support\Facades\Log;
 
 class GetPageCount extends Command
 {

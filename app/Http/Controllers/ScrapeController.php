@@ -9,8 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
 
-use function PHPSTORM_META\type;
-
 class ScrapeController extends Controller
 {
     public function index() : View {
