@@ -11,14 +11,16 @@ use Illuminate\Support\Facades\Artisan;
 
 class ScrapeController extends Controller
 {
-    public function index() : View {
+    public function index(): View
+    {
         $cards = Card::with(["type", "rarity", "civils", "races"])->paginate(10);
         $latest_page = Page::orderBy('created_at', "DESC")->first();
 
         return view("dashboard")->with(["cards" => $cards, "latest_page" => $latest_page]);
     }
 
-    public function dm(Request $request): JsonResponse {
+    public function dm(Request $request): JsonResponse
+    {
         $start = $request->input('start');
         $len = $request->input('length');
         try {
@@ -29,7 +31,8 @@ class ScrapeController extends Controller
         }
     }
 
-    public function page_count(): JsonResponse {
+    public function page_count(): JsonResponse
+    {
         try {
             Artisan::call('scrape:page');
             return response()->json(['message' => 'succeed']);
