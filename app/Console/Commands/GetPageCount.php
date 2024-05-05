@@ -61,14 +61,14 @@ class GetPageCount extends Command
 
             $page_count = $driver->findElement(WebDriverBy::className("nextpostslink"))->getAttribute("data-page");
 
-            echo "現在の総ページ数：". $page_count;
+            echo "現在の総ページ数：" . $page_count . PHP_EOL;
 
             Page::create(["count" => $page_count]);
 
             // 処理終了
             return;
         } catch (\Exception $e) {
-            echo 'エラーによりスクレイピングが失敗しました。ERROR MESSAGE : ' . $e->getMessage() . ' TRACE : ' . $e->getTraceAsString();
+            echo 'エラーによりスクレイピングが失敗しました。ERROR MESSAGE : ' . $e->getMessage() . ' TRACE : ' . $e->getTraceAsString() . PHP_EOL;
         } finally {
             $driver->quit();
         }

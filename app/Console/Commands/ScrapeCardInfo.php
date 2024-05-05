@@ -79,7 +79,7 @@ class ScrapeCardInfo extends Command
             foreach ($urls as $i => $url) {
                 // サイトにアクセス
                 $driver->get($url);
-                echo "現在アクセスしているURL(" . $i + 1 . "個目)： " . $url;
+                echo "現在アクセスしているURL(" . $i + 1 . "個目)： " . $url . PHP_EOL;
 
                 // ページタイトルが読み込まれるまで待つ
                 $driver->wait(3)->until(
@@ -97,7 +97,7 @@ class ScrapeCardInfo extends Command
                     // 詳細ページにアクセス
                     $driver->get($card_info_url);
                     $driver->wait(3);
-                    echo "現在アクセスしている詳細ページ: " . $card_info_url;
+                    echo "現在アクセスしている詳細ページ: " . $card_info_url . PHP_EOL;
 
                     $table_element = $driver->findElement(WebDriverBy::tagName('table'));
                     $elems_head = $table_element->findElement(WebDriverBy::className('cardname'))->getText();
@@ -125,7 +125,7 @@ class ScrapeCardInfo extends Command
                     $packname_start = mb_strripos($packname, "(") + 1;
                     $packneme_end = mb_strripos($packname, " ") - 1;
                     $pack = mb_substr($packname, $packname_start, $packneme_end - $packname_start);
-                    $fileName = $pack . "/" . $cardname . str_replace("/", "-", $packname) . ".jpg";
+                    $fileName = $pack . "/" . str_replace("/", " ", $cardname) . str_replace("/", "-", $packname) . ".jpg";
                     Storage::disk("local")->put('images/' . $fileName, $imageData);
 
                     // Cloudinaryへのアップロード
@@ -173,7 +173,7 @@ class ScrapeCardInfo extends Command
             // 処理終了
             return;
         } catch (\Exception $e) {
-            echo 'エラーによりスクレイピングが失敗しました。ERROR MESSAGE : ' . $e->getMessage() . ' TRACE : ' . $e->getTraceAsString();
+            echo 'エラーによりスクレイピングが失敗しました。ERROR MESSAGE : ' . $e->getMessage() . ' TRACE : ' . $e->getTraceAsString() . PHP_EOL;
         } finally {
             $driver->quit();
         }
