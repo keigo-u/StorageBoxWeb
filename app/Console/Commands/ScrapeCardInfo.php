@@ -35,6 +35,13 @@ class ScrapeCardInfo extends Command
     protected $description = 'Scraping DuelMasters cards infomation';
 
     /**
+     * The name list to avoid duplication.
+     *
+     * @var array
+     */
+    private $pack_name_list;
+
+    /**
      * Execute the console command.
      */
     public function handle()
@@ -46,9 +53,10 @@ class ScrapeCardInfo extends Command
             throw new \Exception("引数が正しくありません。");
         }
 
-        // 5ページ分のURLを生成
+        // length分のURLを生成
         $urls = [];
-        for ($i = $page; $i <= $length; $i++) {
+        $end_page = $page + $length;
+        for ($i = $page; $i < $end_page; $i++) {
             array_push($urls, "https://dm.takaratomy.co.jp/card/?v=%7B%22suggest%22:%22on%22,%22keyword_type%22:%5B%22card_name%22,%22card_ruby%22,%22card_text%22%5D,%22culture_cond%22:%5B%22%E5%8D%98%E8%89%B2%22,%22%E5%A4%9A%E8%89%B2%22%5D,%22pagenum%22:%22" . $i . "%22,%22samename%22:%22show%22,%22sort%22:%22release_new%22%7D");
         }
 
@@ -119,6 +127,11 @@ class ScrapeCardInfo extends Command
 
                     $base_image_url = 'https://dm.takaratomy.co.jp' . $driver->findElement(WebDriverBy::className('cardimg'))->findElement(WebDriverBy::tagName('img'))->getAttribute('src');
 
+                    // すでにDBに登録済みか確認
+                    if ($this->checkAlreadyExist($packname)) {
+                        echo $packname . "はすでに登録済みです。" . PHP_EOL;
+                        continue;
+                    }
 
                     // 画像のダウンロード
                     $imageData = file_get_contents($base_image_url);
@@ -177,5 +190,21 @@ class ScrapeCardInfo extends Command
         } finally {
             $driver->quit();
         }
+    }
+
+    /**
+     * Check the name list includes pack name.
+     *
+     * @param string $pack_name
+     * @return boolean
+     */
+    private function checkAlreadyExist($pack_name)
+    {
+        if (is_null($this->pack_name_list)) {
+            $pack_name_list = Card::get("pack_name");
+        }
+
+        $cotains = $pack_name_list->contains("pack_name", $pack_name);
+        return $cotains;
     }
 }
